@@ -1,73 +1,151 @@
-#include "shell.h"
+#include "main.h"
 
 /**
- * free_data - frees data structure
- *
- * @datash: data structure
- * Return: no return
+ * shell - simple shell
+ * @build: input build
  */
-void free_data(data_shell *datash)
+void shell(config *build)
 {
-	unsigned int i;
-
-	for (i = 0; datash->_environ[i]; i++)
+	while (true)
 	{
-		free(datash->_environ[i]);
+		checkAndGetLine(build);
+		if (splitString(build) == false)
+			continue;
+		if (findBuiltIns(build) == true)
+			continue;
+		checkPath(build);
+		forkAndExecute(build);
 	}
-
-	free(datash->_environ);
-	free(datash->pid);
 }
 
 /**
- * set_data - Initialize data structure
- *
- * @datash: data structure
- * @av: argument vector
- * Return: no return
+ * checkAndGetLine - check stdin and retrieves next line; handles
+ * prompt display
+ * @build: input build
  */
-void set_data(data_shell *datash, char **av)
+void checkAndGetLine(config *build)
 {
-	unsigned int i;
+	register int len;
+	size_t bufferSize = 0;
+	char *ptr, *ptr2;
 
-	datash->av = av;
-	datash->input = NULL;
-	datash->args = NULL;
-	datash->status = 0;
-	datash->counter = 1;
-
-	for (i = 0; environ[i]; i++)
-		;
-
-	datash->_environ = malloc(sizeof(char *) * (i + 1));
-
-	for (i = 0; environ[i]; i++)
+	build->args = NULL;
+	build->envList = NULL;
+	build->lineCounter++;
+	if (isatty(STDIN_FILENO))
+		displayPrompt();
+	len = getline(&build->buffer, &bufferSize, stdin);
+	if (len == EOF)
 	{
-		datash->_environ[i] = _strdup(environ[i]);
-	}
+		freeMembers(build);
+		if (isatty(STDIN_FILENO))
+			displayNewLine();
+		if (build->errorStatus)
+			exit(build->errorStatus);
+		exit(EXIT_SUCCESS);
 
-	datash->_environ[i] = NULL;
-	datash->pid = aux_itoa(getpid());
+	}
+	ptr = _strchr(build->buffer, '\n');
+	ptr2 = _strchr(build->buffer, '\t');
+	if (ptr || ptr2)
+		insertNullByte(build->buffer, len - 1);
+	stripComments(build->buffer);
 }
 
 /**
- * main - Entry point
- *
- * @ac: argument count
- * @av: argument vector
- *
- * Return: 0 on success.
+ * stripComments - remove comments from input string
+ * @str: input string
+ * Return: length of remaining string
  */
-int main(int ac, char **av)
+void stripComments(char *str)
 {
-	data_shell datash;
-	(void) ac;
+	register int i = 0;
+	bool notFirst = false;
 
-	signal(SIGINT, get_sigint);
-	set_data(&datash, av);
-	shell_loop(&datash);
-	free_data(&datash);
-	if (datash.status < 0)
-		return (255);
-	return (datash.status);
+	while (str[i])
+	{
+		if (i == 0 && str[i] == '#')
+		{
+			insertNullByte(str, i);
+			return;
+		}
+		if (notFirst)
+		{
+			if (str[i] == '#' && str[i - 1] == ' ')
+			{
+				insertNullByte(str, i);
+				return;
+			}
+		}
+		i++;
+		notFirst = true;
+	}
 }
+
+/**
+ * forkAndExecute - fork current build and execute processes
+ * @build: input build
+ */
+void forkAndExecute(config *build)
+{
+	int status;
+	pid_t f1 = fork();
+
+	convertLLtoArr(build);
+	if (f1 == -1)
+	{
+		perror("error\n");
+		freeMembers(build);
+		freeArgs(build->envList);
+		exit(1);
+	}
+	if (f1 == 0)
+	{
+		if (execve(build->fullPath, build->args, build->envList) == -1)
+		{
+			errorHandler(build);
+			freeMembers(build);
+			freeArgs(build->envList);
+			if (errno == ENOENT)
+				exit(127);
+			if (errno == EACCES)
+				exit(126);
+		}
+	} else
+	{
+		wait(&status);
+		if (WIFEXITED(status))
+			build->errorStatus = WEXITSTATUS(status);
+		freeArgsAndBuffer(build);
+		freeArgs(build->envList);
+	}
+}
+
+/**
+ * convertLLtoArr - convert linked list to array
+ * @build: input build
+ */
+void convertLLtoArr(config *build)
+{
+	register int i = 0;
+	size_t count = 0;
+	char **envList = NULL;
+	linked_l *tmp = build->env;
+
+	count = list_len(build->env);
+	envList = malloc(sizeof(char *) * (count + 1));
+	if (!envList)
+	{
+		perror("Malloc failed\n");
+		exit(1);
+	}
+	while (tmp)
+	{
+		envList[i] = _strdup(tmp->string);
+		tmp = tmp->next;
+		i++;
+	}
+	envList[i] = NULL;
+	build->envList = envList;
+}
+
