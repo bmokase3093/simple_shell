@@ -1,48 +1,41 @@
-
-.TH SHELL 1 "MAY 18, 2021" "0x16-SIMPLE SHELL"
- "1.01" "C - simple_shell - man page"
-
+.TH man 1 "19 May 2022" "1.0" "Simple_hell man page"
 .SH NAME
-.B simple_shell \- simple UNIX command interpreter made in C 
-
-.SH SYNOPSIS
-$ /hsh [options] [file]
-
-.SH DESCRIPTION
-Simple_Shell is a command language interpreter that executes commands read from the standard input.
-Clone of sh
-
-.SH Return Value
-
-Always returns the status of the previously executed command ( 0 if no command was executed) , number means exit fail codes
-
-.SH PATH
-
-looks in PATH env variable for executable program file location.
-
-.SH 
-
-.B Invocation
-.in +2n
-simple_shell can be invoked both interactively and non-interactively.
-If invoked with standard input not connected to a terminal, it reads and executes received commands in order.
-
-If simple_shell is invoked with standard input connected to a terminal, an interactive shell is opened.
-When executing interactively, the simpl_shell displays the prompt \"($) "\ when it is ready to read a command.
-
-.SH OPTIONS
 .B simple_shell
-Command options will be typed after the main command followed by a space and a
- '-' symbol.
+- A basic UNIX command line interpreter.
+.SH SYNOPSIS
+simple_shell can interpret and execute command line arguments read from the standard input.
+.SH DESCRIPTION
+The simple shell is a program that reads line by line from a file or the terminal line. It then interprets the lines and executes it if the line is a valid command.
 
-.SH EXAMPLE
+.SH USAGE
+All the files are to be compiled on an Ubuntu 14.04 LTS machine with "gcc -Wall -Werror -Wextra -pedantic *.c -o shell".
 
-./hsh [command] [options]
-$ ls -l
+Once compiled, to start the program, run:
+.br
+$ ./simple_shell
 
+To exit the program, run:
+.br
+simpl_shell $ exit
 
+.SH BUILT-INS
+The following built-ins are supported by the Olaf shell:
+
+.B env -
+Print the current environment.
+
+.B setenv VARIABLE VALUE -
+Initialize a new environment variable, or modify an existing one.
+
+.B unsetenv VARIABLE -
+Remove an environment variable.
+
+.SH RETURN VALUE
+simple shell will exit with status 0 unless status is specified.
+.SH SEE ALSO
+.I sh(1)
 .SH BUGS
-not many found.
-
+No known bugs. but if you find any bug you can kindly contact https://github.com/bmokase3093 &  https://github.com/Mabontle22
 .SH AUTHOR
-Ekene Okoli, Esther Ashinedu Uvo
+Bongani Mokase
+Mabontle Ramoretli
