@@ -189,5 +189,9 @@ void freeArgsAndBuffer(config *build);
 void freeArgs(char **args);
 void freeList(linked_l *head);
 
+/*Execute command from a file*/
+void read_file(char *filename, char **argv);
+void treat_file(char *line, int counter, FILE *fp, char **argv);
+void exit_bul_for_file(char **cmd, char *line, FILE *fd);
 #endif
 
